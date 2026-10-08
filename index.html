@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS Knowledge AI</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        canvas: '#0A0D14',
+                        surface: '#111827',
+                        surfaceGlass: 'rgba(17, 24, 39, 0.7)',
+                        glassBorder: 'rgba(51, 65, 85, 0.8)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        body { background-color: #0A0D14; color: #F8FAFC; }
+        
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(79, 70, 229, 0.2); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(79, 70, 229, 0.4); }
+
+        /* Dropzone */
+        .drop-zone { transition: all 0.3s ease; }
+        .drop-zone.dragover { background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.8); }
+
+        /* Animations */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+            50% { opacity: 0.6; box-shadow: 0 0 15px rgba(16, 185, 129, 0.8); }
+        }
+        .status-dot {
+            animation: pulse-glow 2s infinite;
+        }
+
+        .typing-dot {
+            animation: typing 1.4s infinite both;
+            height: 6px; width: 6px; background-color: #8B5CF6; border-radius: 50%; display: inline-block; margin: 0 2px;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; } }
+
+        /* Source Accordion */
+        .source-accordion { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0, 1, 0, 1); }
+        .source-accordion.open { max-height: 1000px; transition: max-height 0.4s ease-in-out; }
+
+        /* Prose styles */
+        .prose-custom p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .prose-custom ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 1rem; }
+        .prose-custom ol { list-style: decimal; padding-left: 1.25rem; margin-bottom: 1rem; }
+        .prose-custom li { margin-bottom: 0.25rem; }
+        .prose-custom code { background-color: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-size: 0.875em; color: #E0E7FF; }
+        .prose-custom pre { background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex relative font-sans">
+    
+    <!-- Background Mesh Glows -->
+    <div class="absolute top-[-15%] right-[-5%] w-[600px] h-[600px] bg-[#4F46E5] rounded-full mix-blend-screen filter blur-[180px] opacity-[0.15] pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#8B5CF6] rounded-full mix-blend-screen filter blur-[150px] opacity-[0.1] pointer-events-none"></div>
+
+    <!-- Sidebar -->
+    <aside class="w-[320px] h-full flex flex-col z-20 glass border-r border-slate-800/80 transition-all">
+        <div class="p-6 flex flex-col h-full gap-6">
+            
+            <!-- Branding -->
+            <div class="flex items-center justify-between">
+                <div class="flex flex-col">
+                    <h1 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                        <i data-lucide="hexagon" class="text-indigo-500 fill-indigo-500/20"></i>
+                        NEXUS
+                    </h1>
+                    <span class="text-xs font-semibold text-indigo-400 tracking-widest uppercase mt-1">Knowledge AI</span>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <div class="glass rounded-xl p-3 flex items-center gap-3 border border-slate-700/50 bg-slate-800/30">
+                <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full status-dot"></div>
+                <div class="flex flex-col">
+                    <span class="text-sm font-medium text-slate-200">Vector Engine</span>
+                    <span class="text-xs text-slate-400">Online & Ready</span>
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Data Ingestion</label>
+                <div id="dropZone" class="drop-zone border-2 border-dashed border-indigo-500/30 hover:border-indigo-500/80 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-900/40 relative overflow-hidden group">
+                    <i data-lucide="cloud-upload" class="h-8 w-8 text-indigo-400 mb-3 group-hover:scale-110 transition-transform"></i>
+                    <p class="text-sm text-slate-200 font-medium">Drag & Drop Documents</p>
+                    <p class="text-xs text-slate-500 mt-1">PDF or TXT up to 50MB</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.txt" class="hidden">
+                    
+                    <!-- Upload overlay -->
+                    <div id="uploadOverlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center hidden backdrop-blur-sm z-10">
+                        <i data-lucide="loader-2" class="h-6 w-6 text-indigo-400 animate-spin mb-2"></i>
+                        <span class="text-xs font-medium text-indigo-300">Processing...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Index Metrics</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass rounded-xl p-4 border border-slate-700/50 bg-slate-800/30 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1">Indexed Files</span>
+                        <span id="metricFiles" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-white to-slate-400">0</span>
+                    </div>
+                    <div class="glass rounded-xl p-4 border border-slate-700/50 bg-slate-800/30 flex flex-col items-center justify-center text-center hover:bg-slate-800/50 transition-colors">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Chunks</span>
+                        <span id="metricChunks" class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 to-violet-400">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clear Memory Action -->
+            <div class="mt-auto">
+                <button id="btnClear" class="w-full flex items-center justify-center gap-2 glass hover:bg-red-500/10 hover:border-red-500/30 text-slate-300 hover:text-red-400 py-3 rounded-xl border border-slate-700/50 transition-all text-sm font-medium group">
+                    <i data-lucide="trash-2" class="h-4 w-4 group-hover:scale-110 transition-transform"></i> Purge Vector Index
+                </button>
+            </div>
+            
+        </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col relative z-10 h-full">
+        <!-- Top Glass Header -->
+        <header class="absolute top-0 left-0 w-full h-16 glass border-b border-slate-800/80 z-20 flex items-center justify-between px-8 bg-canvas/60">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                    <i data-lucide="message-square" class="h-4 w-4 text-indigo-400"></i>
+                </div>
+                <h2 class="text-sm font-medium text-slate-200">Active Workspace</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="clearChatUI()" class="p-2 text-slate-400 hover:text-white bg-transparent hover:bg-slate-800 rounded-lg transition-colors" title="Clear Chat">
+                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Scroll Container -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto px-8 pt-24 pb-36 space-y-8">
+            
+            <!-- Empty State -->
+            <div id="emptyState" class="flex flex-col items-center justify-center h-full text-slate-400 space-y-6">
+                <div class="relative w-20 h-20">
+                    <div class="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 rounded-full"></div>
+                    <div class="w-full h-full rounded-2xl glass border border-slate-700 flex items-center justify-center relative z-10">
+                        <i data-lucide="sparkles" class="h-10 w-10 text-indigo-400"></i>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-2xl font-semibold text-slate-200 mb-2">Welcome to NEXUS</h3>
+                    <p class="text-sm text-slate-500 max-w-md">Ingest your documents via the sidebar and start asking questions. Powered by Gemini 2.5 Flash and FAISS Vector Search.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Floating Input Bar -->
+        <div class="absolute bottom-0 left-0 w-full p-8 pt-16 bg-gradient-to-t from-canvas via-canvas/90 to-transparent pointer-events-none z-20">
+            <div class="max-w-4xl mx-auto pointer-events-auto relative">
+                <form id="chatForm" class="relative group">
+                    <div class="absolute inset-0 bg-indigo-500/20 blur-xl rounded-full opacity-0 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                    <div class="glass m-0 rounded-full border border-slate-700/80 bg-slate-900/60 flex items-center p-2 pl-6 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/50 shadow-2xl transition-all relative z-10">
+                        <input type="text" id="queryInput" placeholder="Ask anything about your documents..." class="flex-1 bg-transparent border-none focus:ring-0 text-slate-200 text-sm py-3 outline-none placeholder:text-slate-500" autocomplete="off">
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-full transition-all hover:scale-105 shadow-lg shadow-indigo-500/25 ml-2">
+                            <i data-lucide="arrow-up" class="h-5 w-5"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const uploadOverlay = document.getElementById('uploadOverlay');
+        const metricFiles = document.getElementById('metricFiles');
+        const metricChunks = document.getElementById('metricChunks');
+        const btnClear = document.getElementById('btnClear');
+        const chatForm = document.getElementById('chatForm');
+        const queryInput = document.getElementById('queryInput');
+        const chatContainer = document.getElementById('chatContainer');
+        const emptyState = document.getElementById('emptyState');
+        
+        let chatHistory = [];
+
+        // --- File Upload ---
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) uploadFiles(fileInput.files);
+        });
+
+        async function uploadFiles(files) {
+            uploadOverlay.classList.remove('hidden');
+            const formData = new FormData();
+            for (const file of files) formData.append('files', file);
+            
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    animateValue(metricChunks, parseInt(metricChunks.innerText), data.total_chunks, 1000);
+                    animateValue(metricFiles, parseInt(metricFiles.innerText), data.indexed_files.length, 1000);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Upload failed.");
+            } finally {
+                uploadOverlay.classList.add('hidden');
+                fileInput.value = '';
+            }
+        }
+
+        // Animate counter
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // --- Clear Index ---
+        btnClear.addEventListener('click', async () => {
+            if(!confirm("Purge vector index and all uploaded documents?")) return;
+            try {
+                await fetch('/api/clear', { method: 'POST' });
+                metricChunks.textContent = '0';
+                metricFiles.textContent = '0';
+                clearChatUI();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function clearChatUI() {
+            chatHistory = [];
+            const children = Array.from(chatContainer.children);
+            children.forEach(c => {
+                if(c !== emptyState) chatContainer.removeChild(c);
+            });
+            emptyState.style.display = 'flex';
+        }
+
+        // --- Chat UI ---
+        function appendMessage(role, text) {
+            if (emptyState.style.display !== 'none') emptyState.style.display = 'none';
+            
+            const div = document.createElement('div');
+            div.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            if (role === 'user') {
+                div.innerHTML = `
+                    <div class="max-w-[75%] bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-4 rounded-2xl rounded-tr-sm shadow-lg shadow-indigo-500/20 text-sm leading-relaxed">
+                        ${text}
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="max-w-[85%] w-full flex gap-4 items-start">
+                        <div class="w-10 h-10 shrink-0 rounded-xl glass bg-slate-800/80 border border-slate-700 flex items-center justify-center shadow-lg text-indigo-400 mt-1">
+                            <i data-lucide="sparkles" class="h-5 w-5"></i>
+                        </div>
+                        <div class="flex-1 glass bg-slate-800/60 border border-slate-700/80 rounded-2xl rounded-tl-sm px-6 py-5 shadow-xl flex flex-col text-slate-200">
+                            <div class="prose-custom text-sm markdown-content w-full">
+                                ${text}
+                            </div>
+                            <div class="source-container mt-5 hidden border-t border-slate-700/50 pt-4">
+                                <button class="source-toggle flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-indigo-400 transition-colors w-fit">
+                                    <i data-lucide="library" class="h-4 w-4"></i>
+                                    <span>View Citations</span>
+                                    <i data-lucide="chevron-down" class="h-3 w-3 ml-1 transition-transform chevron"></i>
+                                </button>
+                                <div class="source-accordion mt-4 space-y-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            chatContainer.appendChild(div);
+            lucide.createIcons();
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return div;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            // Render User Bubble
+            appendMessage('user', query);
+            chatHistory.push({ role: 'user', content: query });
+            queryInput.value = '';
+
+            // Render Assistant Typing
+            const typingHtml = `<div class="flex items-center h-5"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+            const msgNode = appendMessage('assistant', typingHtml);
+            const markdownContainer = msgNode.querySelector('.markdown-content');
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, api_key: "", history: chatHistory })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    markdownContainer.innerHTML = `<span class="text-red-400 bg-red-400/10 px-3 py-2 rounded-lg inline-block">Error: ${err.detail || 'Request failed'}</span>`;
+                    return;
+                }
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let fullText = '';
+                let isSourcesPart = false;
+                let sourcesJSON = '';
+                let isSuggestionsPart = false;
+                let suggestionsJSON = '';
+                
+                markdownContainer.innerHTML = ''; 
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    let processChunk = chunk;
+                    
+                    if (processChunk.includes('__SUGGESTIONS__')) {
+                        const parts = processChunk.split('__SUGGESTIONS__');
+                        fullText += parts[0];
+                        isSuggestionsPart = true;
+                        processChunk = parts[1];
+                    }
+                    
+                    if (processChunk && processChunk.includes('__SOURCES__')) {
+                        const parts = processChunk.split('__SOURCES__');
+                        if (isSuggestionsPart) {
+                            suggestionsJSON += parts[0];
+                        } else {
+                            fullText += parts[0];
+                        }
+                        isSuggestionsPart = false;
+                        isSourcesPart = true;
+                        processChunk = parts[1];
+                    }
+                    
+                    if (isSourcesPart) {
+                        sourcesJSON += processChunk;
+                    } else if (isSuggestionsPart) {
+                        suggestionsJSON += processChunk;
+                    } else {
+                        fullText += processChunk;
+                        markdownContainer.innerHTML = marked.parse(fullText);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                }
+                
+                // Final Markdown Render
+                markdownContainer.innerHTML = marked.parse(fullText);
+                chatHistory.push({ role: 'assistant', content: fullText });
+
+                // Render Suggestions
+                if (suggestionsJSON.trim()) {
+                    try {
+                        const suggestions = JSON.parse(suggestionsJSON.trim());
+                        if (suggestions && suggestions.length > 0) {
+                            const sugContainer = document.createElement('div');
+                            sugContainer.className = "mt-4 flex flex-wrap gap-2 pt-4 border-t border-slate-700/50";
+                            suggestions.forEach(sug => {
+                                const btn = document.createElement('button');
+                                btn.className = "text-xs font-medium bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-full transition-colors flex items-center gap-1.5 text-left";
+                                btn.innerHTML = `<i data-lucide="help-circle" class="h-3 w-3 shrink-0"></i> <span>${sug}</span>`;
+                                btn.onclick = () => {
+                                    document.getElementById('queryInput').value = sug;
+                                    document.getElementById('chatForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                                };
+                                sugContainer.appendChild(btn);
+                            });
+                            msgNode.querySelector('.flex-1').appendChild(sugContainer);
+                            lucide.createIcons();
+                        }
+                    } catch (e) {
+                        console.error("Suggestions parse error:", e);
+                    }
+                }
+
+                // Render Citations
+                if (sourcesJSON.trim()) {
+                    try {
+                        const sources = JSON.parse(sourcesJSON.trim());
+                        if (sources && sources.length > 0) {
+                            const sourceContainer = msgNode.querySelector('.source-container');
+                            const sourceToggle = msgNode.querySelector('.source-toggle');
+                            const sourceAccordion = msgNode.querySelector('.source-accordion');
+                            const chevron = sourceToggle.querySelector('.chevron');
+                            
+                            sourceContainer.classList.remove('hidden');
+                            
+                            sources.forEach((src, idx) => {
+                                const srcDiv = document.createElement('div');
+                                srcDiv.className = "bg-slate-900/50 rounded-xl p-4 border border-slate-700/60 shadow-inner";
+                                srcDiv.innerHTML = `
+                                    <div class="flex items-center justify-between mb-3">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-5 h-5 rounded-md bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30 text-indigo-400 shrink-0">
+                                                <span class="text-[10px] font-bold">${idx + 1}</span>
+                                            </div>
+                                            <span class="text-xs font-semibold text-slate-300 truncate max-w-[200px]" title="${src.filename}">${src.filename}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            ${src.score !== undefined ? `<span class="text-[10px] font-bold px-2 py-1 rounded-md border ${src.score >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : (src.score >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-slate-500/10 text-slate-400 border-slate-500/20')}">${src.score}% MATCH</span>` : ''}
+                                            <span class="text-[10px] font-medium tracking-wider text-violet-300 bg-violet-500/10 border border-violet-500/20 px-2.5 py-1 rounded-full">PAGE ${src.page}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-xs text-slate-400 leading-relaxed border-l-2 border-indigo-500/40 pl-3 py-1 italic relative">
+                                        "${src.text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}"
+                                    </div>
+                                `;
+                                sourceAccordion.appendChild(srcDiv);
+                            });
+
+                            sourceToggle.addEventListener('click', () => {
+                                sourceAccordion.classList.toggle('open');
+                                const isOpen = sourceAccordion.classList.contains('open');
+                                chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+                                if (isOpen) {
+                                    setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 150);
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Sources parse error:", e);
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                markdownContainer.innerHTML = `<span class="text-red-400 bg-red-400/10 px-3 py-2 rounded-lg inline-block">Connection interrupted. Please try again.</span>`;
+            }
+        });
+    </script>
+</body>
+</html>
