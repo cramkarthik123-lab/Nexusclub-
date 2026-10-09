@@ -1,0 +1,15 @@
+# Secrets & Environment variables
+.env
+*.env
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Python Cache & Runtime
+__pycache__/
+*.pyc
+
+# FAISS or temporary local vector storage (optional)
+*.index
